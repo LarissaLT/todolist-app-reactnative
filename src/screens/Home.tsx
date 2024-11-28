@@ -1,33 +1,46 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  FlatList, 
-  Image, 
-  StyleSheet, 
-  Switch, 
-  Modal 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  StyleSheet,
+  Modal,
+  Alert,
 } from 'react-native';
+
+import { format, addDays } from 'date-fns';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 type Task = {
   id: string;
   text: string;
   isChecked: boolean;
+  date: string;
 };
 
 const HomeScreen: React.FC = () => {
   const [task, setTask] = useState<string>('');
   const [tasksList, setTasksList] = useState<Task[]>([]);
-  const [virtualInspectionModalVisible, setVirtualInspectionModalVisible] = useState(false);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [virtualInspectionModalVisible, setVirtualInspectionModalVisible] =
+    useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const addTask = () => {
     if (task.trim()) {
       setTasksList((prevTasks) => [
         ...prevTasks,
-        { id: Date.now().toString(), text: task, isChecked: false }
+        {
+          id: Date.now().toString(),
+          text: task,
+          isChecked: false,
+          date: format(selectedDate, 'dd-MM-yyyy'),
+        },
       ]);
       setTask('');
     }
@@ -51,13 +64,39 @@ const HomeScreen: React.FC = () => {
 
   const handleDeletePress = (taskId: string) => {
     setTaskToDelete(taskId);
-    setVirtualInspectionModalVisible(true); 
+    setVirtualInspectionModalVisible(true);
+  };
+
+  const filteredTasks = tasksList.filter(
+    (task) => task.date === format(selectedDate, 'dd-MM-yyyy')
+  );
+
+  const showDatePickerHandler = () => {
+    setShowDatePicker(true);
+  };
+
+  const onDateChange = (event: any, date: Date | undefined) => {
+    setShowDatePicker(false);
+    if (date) {
+      // Verifica se a data escolhida é superior à data de hoje
+      const today = new Date();
+      if (date > today) {
+        Alert.alert('Data inválida', 'Não é permitido escolher uma data futura');
+        // Retorna a data para o valor original, que é a data de hoje
+        setSelectedDate(today);
+      } else {
+        setSelectedDate(date);
+      }
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.navbar}>
-        <Image source={require('../assets/images/todolist.logo.png')} style={styles.logo} />
+        <Image
+          source={require('../assets/images/todolist.logo.png')}
+          style={styles.logo}
+        />
       </View>
 
       <TextInput
@@ -74,35 +113,63 @@ const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.datePickerContainer}>
+        <TouchableOpacity onPress={showDatePickerHandler} style={styles.dateButton}>
+          <Image
+            source={require('../assets/images/todolist.calendar.png')}
+            style={styles.calendarIcon}
+          />
+        </TouchableOpacity>
+        <Text style={styles.dateText}>{format(selectedDate, 'dd/MM/yyyy')}</Text>
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display="default"
+          onChange={onDateChange}
+        />
+      )}
+
       <FlatList
-        data={tasksList}
+        data={filteredTasks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.listItem}>
-            <TouchableOpacity onPress={() => toggleTaskCheck(item.id)} style={styles.checkboxContainer}>
+            <TouchableOpacity
+              onPress={() => toggleTaskCheck(item.id)}
+              style={styles.checkboxContainer}
+            >
               <Image
-                source={item.isChecked ? require('../assets/images/todolist.checkbox-on.png') : require('../assets/images/todolist.checkbox-off.png')}
+                source={
+                  item.isChecked
+                    ? require('../assets/images/todolist.checkbox-on.png')
+                    : require('../assets/images/todolist.checkbox-off.png')
+                }
                 style={styles.checkbox}
               />
             </TouchableOpacity>
 
             <Text
-              style={[
-                styles.listItemText,
-                item.isChecked && { textDecorationLine: 'line-through' }, 
-              ]}
+              style={[styles.listItemText, item.isChecked && { textDecorationLine: 'line-through' }]}
             >
               {item.text}
             </Text>
 
-            <TouchableOpacity onPress={() => handleDeletePress(item.id)} style={styles.deleteButton}>
-              <Image source={require('../assets/images/todolist.trash.png')} style={styles.deleteIcon} />
+            <TouchableOpacity
+              onPress={() => handleDeletePress(item.id)}
+              style={styles.deleteButton}
+            >
+              <Image
+                source={require('../assets/images/todolist.trash.png')}
+                style={styles.deleteIcon}
+              />
             </TouchableOpacity>
           </View>
         )}
       />
 
-      {/* Modal */}
       <Modal
         visible={virtualInspectionModalVisible}
         transparent
@@ -117,7 +184,7 @@ const HomeScreen: React.FC = () => {
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setVirtualInspectionModalVisible(false)} 
+                onPress={() => setVirtualInspectionModalVisible(false)}
               >
                 <Text style={styles.modalCancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
@@ -161,9 +228,6 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     fontSize: 16,
   },
-  checkboxContainer: {
-    marginRight: 10,
-  },
   buttonContainer: {
     alignItems: 'center',
   },
@@ -182,6 +246,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  datePickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  dateText: {
+    color: '#1e3050',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginHorizontal: 10,
+  },
+  dateButtonText: {
+    fontSize: 14,
+    color: '#76d7ef',
+  },
   listItem: {
     flexDirection: 'row',
     backgroundColor: '#ffffff',
@@ -190,21 +270,23 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
   },
+  checkboxContainer: {
+    marginRight: 10,
+  },
   checkbox: {
-    width: 35, 
-    height: 35, 
-    resizeMode: 'contain', 
+    width: 35,
+    height: 35,
+    resizeMode: 'contain',
   },
   listItemText: {
     color: '#333',
     fontSize: 16,
     flex: 1,
   },
-
   deleteButton: {
     alignSelf: 'flex-end',
-    marginLeft: 'auto', 
-    padding: 10,
+    marginLeft: 'auto',
+    padding: 5,
   },
   deleteIcon: {
     width: 20,
@@ -215,20 +297,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   modalContent: {
-    width: 300,
+    width: '80%',
     backgroundColor: 'white',
     padding: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
   },
   modalSubtitle: {
     fontSize: 18,
-    marginBottom: 15,
-    color: '#333',
-    textAlign: 'center',
+    marginBottom: 20,
   },
   modalButtonContainer: {
     flexDirection: 'row',
@@ -236,17 +316,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    width: '45%',
     alignItems: 'center',
-    width: 100,
   },
   cancelButton: {
-    backgroundColor: '#76d7ef',
+    backgroundColor: '#ccc',
   },
   confirmButton: {
-    backgroundColor: 'gray',
+    backgroundColor: '#f44336',
   },
   modalCancelButtonText: {
     color: '#fff',
@@ -255,6 +335,16 @@ const styles = StyleSheet.create({
   modalConfirmButtonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  dateButton: {
+    padding: 0,
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+  },
+  calendarIcon: {
+    backgroundColor: '#f5f8fa',
+    width: 30, 
+    height: 30, 
   },
 });
 
