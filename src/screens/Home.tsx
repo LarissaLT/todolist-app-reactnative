@@ -14,7 +14,7 @@ import {
 import { format } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-type Task = {
+export type Task = {
   id: string;
   text: string;
   isChecked: boolean;
@@ -141,6 +141,13 @@ const HomeScreen: React.FC = () => {
         />
       )}
 
+      <View style={styles.tasks}>
+      {filteredTasks.length === 0 ? (
+        <View style={styles.taskInfo}>
+          <Text style={styles.noTasksText}>Você ainda não tem tarefas</Text>
+        </View>
+      ) : (
+
       <FlatList
         data={currentTasks}
         keyExtractor={(item) => item.id}
@@ -178,7 +185,10 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
       />
+    )}
+    </View>
 
+    <View style={styles.pagination}>
       <View style={styles.paginationContainer}>
         <TouchableOpacity
           disabled={currentPage === 1}
@@ -236,6 +246,7 @@ const HomeScreen: React.FC = () => {
         </View>
       </Modal>
     </View>
+    </View>
   );
 };
 
@@ -257,7 +268,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 50,
-    color: 'black',
+    color: '#1e3050',
     borderColor: '#76d7ef',
     borderWidth: 2,
     borderRadius: 8,
@@ -398,6 +409,25 @@ const styles = StyleSheet.create({
   modalConfirmButtonText: {
     textAlign: 'center',
     color: '#fff',
+  },
+  noTasksText: {
+    fontSize: 20,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  taskInfo: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center', 
+    textAlign: 'center',
+  },
+  tasks: {
+    flexGrow: 1,
+  },
+  pagination: {
+    flexShrink: 0, 
+    marginTop: 20,
   },
 });
 
