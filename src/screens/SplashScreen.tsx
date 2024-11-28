@@ -27,7 +27,6 @@ const SplashScreen = () => {
             resizeMode="contain"
           />
           <View style={{ alignItems: 'center', marginBottom: 30 }}>
-            {/* Você pode adicionar mais componentes aqui, se necessário */}
           </View>
         </ScrollView>
       </SafeAreaView>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,11 +22,11 @@ export type Task = {
 };
 
 const HomeScreen: React.FC = () => {
-  const [task, setTask] = useState<string>('');
+  const [task, setTask] = useState<string>(''); 
+  const [tasks, setTasks] = useState<Task[]>([]); 
   const [tasksList, setTasksList] = useState<Task[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [virtualInspectionModalVisible, setVirtualInspectionModalVisible] =
-    useState(false);
+  const [virtualInspectionModalVisible, setVirtualInspectionModalVisible] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -34,19 +34,57 @@ const HomeScreen: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 5;
 
+  useEffect(() => {
+    const loadTasks = async () => {
+      const tasksData: Task[] = [
+        { id: '1', text: 'Comprar pão na padaria para o café da manhã.', isChecked: false, date: '25-11-2024' },
+        { id: '2', text: 'Ir ao supermercado para comprar frutas e vegetais.', isChecked: false, date: '25-11-2024' },
+        { id: '3', text: 'Lavar o carro, pois está muito sujo.', isChecked: true, date: '25-11-2024' },
+
+        { id: '4', text: 'Estudar para a prova de matemática amanhã.', isChecked: false, date: '26-11-2024' },
+        { id: '5', text: 'Fazer revisão das notas de física para a aula de amanhã.', isChecked: true, date: '26-11-2024' },
+        { id: '6', text: 'Finalizar relatório do projeto de TI.', isChecked: false, date: '26-11-2024' },
+        { id: '7', text: 'Fazer a receita de bolo de chocolate para o aniversário.', isChecked: true, date: '26-11-2024' },
+        { id: '8', text: 'Responder e-mails pendentes.', isChecked: false, date: '26-11-2024' },
+        { id: '9', text: 'Agendar reunião com o cliente para a próxima semana.', isChecked: true, date: '26-11-2024' },
+        { id: '10', text: 'Limpar a casa e arrumar o quarto.', isChecked: false, date: '26-11-2024' },
+        { id: '11', text: 'Fazer compras para a festa de fim de semana.', isChecked: true, date: '26-11-2024' },
+
+        { id: '12', text: 'Fazer check-in para o voo da viagem de negócios.', isChecked: false, date: '27-11-2024' },
+        { id: '13', text: 'Comprar ingressos para o evento de sexta-feira.', isChecked: true, date: '27-11-2024' },
+        { id: '14', text: 'Assistir ao webinar sobre marketing digital.', isChecked: true, date: '27-11-2024' },
+        { id: '15', text: 'Organizar arquivos no Google Drive.', isChecked: false, date: '27-11-2024' },
+        { id: '16', text: 'Marcar consulta no dentista.', isChecked: false, date: '27-11-2024' },
+      ];
+      setTasks(tasksData);
+      setTasksList(tasksData); 
+    };
+  
+    loadTasks();
+  }, []);
+
   const addTask = () => {
-    if (task.trim()) {
-      setTasksList((prevTasks) => [
-        ...prevTasks,
-        {
-          id: Date.now().toString(),
-          text: task,
-          isChecked: false,
-          date: format(selectedDate, 'dd-MM-yyyy'),
-        },
-      ]);
-      setTask('');
+    if (!task.trim()) {
+      Alert.alert('Erro', 'A tarefa não pode estar vazia.');
+      return;
     }
+
+    const newTask: Task = {
+      id: Date.now().toString(),
+      text: task,
+      isChecked: false,
+      date: format(selectedDate, 'dd-MM-yyyy'),
+    };
+
+    setTasksList((prevTasks) => [...prevTasks, newTask]);
+    setTask('');
+  };
+
+  const deleteTask = (taskId: string | null) => {
+    if (!taskId) return;
+    setTasksList((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+    setVirtualInspectionModalVisible(false);
+    setTaskToDelete(null);
   };
 
   const toggleTaskCheck = (taskId: string) => {
@@ -55,14 +93,6 @@ const HomeScreen: React.FC = () => {
         task.id === taskId ? { ...task, isChecked: !task.isChecked } : task
       )
     );
-  };
-
-  const deleteTask = () => {
-    if (taskToDelete) {
-      setTasksList((prevTasks) => prevTasks.filter((task) => task.id !== taskToDelete));
-      setTaskToDelete(null);
-    }
-    setVirtualInspectionModalVisible(false);
   };
 
   const handleDeletePress = (taskId: string) => {
@@ -78,9 +108,8 @@ const HomeScreen: React.FC = () => {
   const indexOfFirstTask = indexOfLastTask - tasksPerPage;
   const currentTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
 
-  const totalPages = filteredTasks.length === 0 
-  ? 1 
-  : Math.ceil(filteredTasks.length / tasksPerPage);
+  const totalPages =
+    filteredTasks.length === 0 ? 1 : Math.ceil(filteredTasks.length / tasksPerPage);
 
   const showDatePickerHandler = () => {
     setShowDatePicker(true);
@@ -237,7 +266,7 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
-                onPress={deleteTask}
+                onPress={() => deleteTask(taskToDelete)}
               >
                 <Text style={styles.modalConfirmButtonText}>Excluir</Text>
               </TouchableOpacity>
