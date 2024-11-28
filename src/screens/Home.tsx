@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 type Task = {
@@ -30,6 +30,9 @@ const HomeScreen: React.FC = () => {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 5;
 
   const addTask = () => {
     if (task.trim()) {
@@ -71,6 +74,14 @@ const HomeScreen: React.FC = () => {
     (task) => task.date === format(selectedDate, 'dd-MM-yyyy')
   );
 
+  const indexOfLastTask = currentPage * tasksPerPage;
+  const indexOfFirstTask = indexOfLastTask - tasksPerPage;
+  const currentTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
+
+  const totalPages = filteredTasks.length === 0 
+  ? 1 
+  : Math.ceil(filteredTasks.length / tasksPerPage);
+
   const showDatePickerHandler = () => {
     setShowDatePicker(true);
   };
@@ -78,11 +89,9 @@ const HomeScreen: React.FC = () => {
   const onDateChange = (event: any, date: Date | undefined) => {
     setShowDatePicker(false);
     if (date) {
-      // Verifica se a data escolhida é superior à data de hoje
       const today = new Date();
       if (date > today) {
         Alert.alert('Data inválida', 'Não é permitido escolher uma data futura');
-        // Retorna a data para o valor original, que é a data de hoje
         setSelectedDate(today);
       } else {
         setSelectedDate(date);
@@ -133,7 +142,7 @@ const HomeScreen: React.FC = () => {
       )}
 
       <FlatList
-        data={filteredTasks}
+        data={currentTasks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.listItem}>
@@ -169,6 +178,34 @@ const HomeScreen: React.FC = () => {
           </View>
         )}
       />
+
+      <View style={styles.paginationContainer}>
+        <TouchableOpacity
+          disabled={currentPage === 1}
+          onPress={() => setCurrentPage(currentPage - 1)}
+          style={styles.pageButton}
+        >
+          <Image
+          source={require('../assets/images/todolist.left.png')}
+          style={styles.imageleft}
+        />
+        </TouchableOpacity>
+
+        <Text style={styles.pageText}>
+          Página {currentPage} de {totalPages}
+        </Text>
+
+        <TouchableOpacity
+          disabled={currentPage === totalPages}
+          onPress={() => setCurrentPage(currentPage + 1)}
+          style={styles.pageButton}
+        >
+          <Image
+          source={require('../assets/images/todolist.right.png')}
+          style={styles.imageright}
+        />
+        </TouchableOpacity>
+      </View>
 
       <Modal
         visible={virtualInspectionModalVisible}
@@ -238,7 +275,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 25,
     marginTop: 20,
-    marginBottom: 30,
     alignItems: 'center',
   },
   buttonText: {
@@ -250,7 +286,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: 15,
   },
   dateText: {
     color: '#1e3050',
@@ -258,40 +294,68 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginHorizontal: 10,
   },
-  dateButtonText: {
-    fontSize: 14,
-    color: '#76d7ef',
+  dateButton: {
+    padding: 0,
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+  },
+  calendarIcon: {
+    backgroundColor: '#f5f8fa',
+    width: 25, 
+    height: 25, 
   },
   listItem: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    padding: 10,
-    marginVertical: 5,
-    borderRadius: 5,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   checkboxContainer: {
-    marginRight: 10,
+    marginRight: 5,
   },
   checkbox: {
-    width: 35,
-    height: 35,
-    resizeMode: 'contain',
+    width: 25,
+    height: 25,
   },
   listItemText: {
-    color: '#333',
-    fontSize: 16,
     flex: 1,
+    fontSize: 16,
+    color: '#1e3050',
   },
   deleteButton: {
-    alignSelf: 'flex-end',
-    marginLeft: 'auto',
-    padding: 5,
+    marginLeft: 10,
   },
   deleteIcon: {
-    width: 20,
-    height: 20,
-    resizeMode: 'contain',
+    width: 18,
+    height: 18,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  pageButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  imageleft: {
+    width: 15, 
+    height: 15, 
+    resizeMode: 'contain', 
+  },
+  imageright: {
+    width: 15, 
+    height: 15, 
+    resizeMode: 'contain', 
+  },
+  pageText: {
+    color: '#1e3050',
+    fontSize: 14,
   },
   modalContainer: {
     flex: 1,
@@ -309,42 +373,31 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     fontSize: 18,
     marginBottom: 20,
+    color: '#333',
   },
   modalButtonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+    justifyContent: 'space-between', 
+    width: '100%', 
   },
   modalButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    width: '45%',
-    alignItems: 'center',
+    padding: 10,
+    borderRadius: 5,
+    width: '42%',
   },
   cancelButton: {
     backgroundColor: '#ccc',
   },
   confirmButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: '#1e3050',
   },
   modalCancelButtonText: {
+    textAlign: 'center',
     color: '#fff',
-    fontSize: 16,
   },
   modalConfirmButtonText: {
+    textAlign: 'center',
     color: '#fff',
-    fontSize: 16,
-  },
-  dateButton: {
-    padding: 0,
-    backgroundColor: '#ffffff',
-    borderRadius: 5,
-  },
-  calendarIcon: {
-    backgroundColor: '#f5f8fa',
-    width: 30, 
-    height: 30, 
   },
 });
 
